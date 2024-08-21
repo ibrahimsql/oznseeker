@@ -1,0 +1,58 @@
+<?php
+header('Content-Type: application/json');
+
+// Validate and sanitize input data
+function sanitizeInput($data) {
+    return htmlspecialchars(strip_tags(trim($data)));
+}
+
+$ok_status = isset($_POST['Status']) ? sanitizeInput($_POST['Status']) : 'Unknown';
+$lat = isset($_POST['Lat']) ? sanitizeInput($_POST['Lat']) : 'Not Available';
+$lon = isset($_POST['Lon']) ? sanitizeInput($_POST['Lon']) : 'Not Available';
+$acc = isset($_POST['Acc']) ? sanitizeInput($_POST['Acc']) : 'Not Available';
+$alt = isset($_POST['Alt']) ? sanitizeInput($_POST['Alt']) : 'Not Available';
+$dir = isset($_POST['Dir']) ? sanitizeInput($_POST['Dir']) : 'Not Available';
+$spd = isset($_POST['Spd']) ? sanitizeInput($_POST['Spd']) : 'Not Available';
+
+$data = array(
+    'status' => $ok_status,
+    'lat' => $lat,
+    'lon' => $lon,
+    'acc' => $acc,
+    'alt' => $alt,
+    'dir' => $dir,
+    'spd' => $spd
+);
+
+$json_data = json_encode($data, JSON_PRETTY_PRINT);
+
+$logFilePath = '../../logs/result.txt';
+
+// Check if file is writable or create it if necessary
+if (file_exists($logFilePath)) {
+    if (!is_writable($logFilePath)) {
+        http_response_code(500);
+        echo json_encode(['error' => 'File is not writable']);
+        exit;
+    }
+} else {
+    $dir = dirname($logFilePath);
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
+    if (!touch($logFilePath)) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Unable to create file']);
+        exit;
+    }
+}
+
+// Write data to file
+if (file_put_contents($logFilePath, $json_data) === false) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Failed to write to file']);
+    exit;
+}
+
+echo json_encode(['status' => 'success']);
+?>
